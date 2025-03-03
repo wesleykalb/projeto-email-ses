@@ -1,0 +1,45 @@
+service: projeto2-envio-email
+
+provider:
+  name: aws
+  runtime: python3.13
+  region: us-east-1
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "ses:SendEmail"
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "s3:GetObject"
+          Resource: "arn:aws:s3:::${self:custom.BucketName}/*"
+        - Effect: "Allow"
+          Action:
+            - "s3:ListBucket"
+          Resource: "arn:aws:s3:::${self:custom.BucketName}"
+
+functions:
+  envio-email:
+    handler: src/handler.envio_email
+    events:
+      - s3:
+          bucket: ${self:custom.BucketName}
+          event: s3:ObjectCreated:Put
+          rules:
+            - suffix: ".csv"
+
+custom:
+  BucketName: "envio-emails"
+
+plugins:
+  - serverless-python-requirements
+
+package:
+  patterns:
+    - '!node_modules/**'
+    - '!venv/**'
+    - '!*.csv'
+    - '!*.json'
+    - 'src/**'
